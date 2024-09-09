@@ -2,10 +2,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const cors = require('cors'); // Import CORS
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors()); // Enable CORS for all routes
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
@@ -19,23 +21,38 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-// Schema and model
-const ItemSchema = new mongoose.Schema({
-  name: String,
+// Definición del esquema del ataque y las rutas para las solicitudes
+const attackSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  intensity: { type: String, required: true },
+  duration: { type: String },
+  invalidating: { type: Boolean, required: true },
+  medication: { type: String, required: true },
+  menstruation: { type: Boolean, required: true },
+  date: { type: Date, default: Date.now },
 });
 
-const Item = mongoose.model('Item', ItemSchema);
+const Attack = mongoose.model("Attack", attackSchema);
 
-// Routes
-app.get('/api/items', async (req, res) => {
-  const items = await Item.find();
-  res.json(items);
+// Ruta para obtener todos los ataques
+app.get("/api/attacks", async (req, res) => {
+  try {
+    const attacks = await Attack.find();
+    res.status(200).json(attacks);
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Unknown error" });
+  }
 });
 
-app.post('/api/items', async (req, res) => {
-  const newItem = new Item(req.body);
-  await newItem.save();
-  res.json(newItem);
+// Ruta para crear un nuevo ataque
+app.post("/api/attacks", async (req, res) => {
+  const attackData = new Attack(req.body);
+  try {
+    const savedAttack = await attackData.save();
+    res.status(201).json(savedAttack);
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Unknown error" });
+  }
 });
 
 // Start server locally for development
